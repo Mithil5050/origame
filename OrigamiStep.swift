@@ -1,9 +1,6 @@
 import SwiftUI
 import Observation
 
-// MARK: - Helper Types
-
-/// Defines the anchor point for the 3D rotation hinge
 enum FoldAnchor {
     case top, bottom, leading, trailing, center
     case custom(UnitPoint)
@@ -20,45 +17,32 @@ enum FoldAnchor {
     }
 }
 
-// MARK: - Data Models
-
-/// Represents a precise vector-based folding action with diagrammatic guides
-struct OrigamiStep: Identifiable {
+struct OrigamiStep: Identifiable, Hashable {
     let id = UUID()
     let instruction: String
-    
-    /// The shape of the paper during this step (Normalized coordinates 0.0 to 1.0)
     let paperPoints: [CGPoint]
-    
-    /// The specific points forming the "flap" that the user actually moves
+    let completedFlaps: [[CGPoint]]
     let flapPoints: [CGPoint]
-    
-    /// The exact vector path where the dotted guide line should appear
     let creasePoints: [CGPoint]
-    
-    /// The hinge of the fold
     let anchor: FoldAnchor
-    
-    /// The 3D axis of rotation
     let rotationAxis: (x: CGFloat, y: CGFloat, z: CGFloat)
-    
-    /// The final resting angle (usually -180 or 180)
     let targetAngle: Double
     
-    var isCompleted: Bool = false
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
+    static func == (lhs: OrigamiStep, rhs: OrigamiStep) -> Bool { lhs.id == rhs.id }
 }
 
 struct OrigamiProject: Identifiable, Hashable {
     let id = UUID()
     let title: String
+    let difficulty: String
     let iconName: String
+    let accentColor: Color
     var steps: [OrigamiStep]
     
-    static func == (lhs: OrigamiProject, rhs: OrigamiProject) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
+    static func == (lhs: OrigamiProject, rhs: OrigamiProject) -> Bool { lhs.id == rhs.id }
 }
-
-// MARK: - The State Engine
 
 @Observable
 class OrigamiEngine {
@@ -72,7 +56,7 @@ class OrigamiEngine {
     }
     
     var progressText: String {
-        guard let project = currentProject else { return "Select a Project" }
+        guard let project = currentProject else { return "" }
         return "Step \(currentStepIndex + 1) of \(project.steps.count)"
     }
     
@@ -84,7 +68,6 @@ class OrigamiEngine {
     
     func completeCurrentStep() {
         guard let project = currentProject else { return }
-        
         if currentStepIndex < project.steps.count - 1 {
             currentStepIndex += 1
             UISelectionFeedbackGenerator().selectionChanged()
@@ -94,47 +77,117 @@ class OrigamiEngine {
         }
     }
     
-    // MARK: - The High-Accuracy Sailboat Tutorial
-    
     static let mockProjects: [OrigamiProject] = [
+        // 1. THE PRO SAILBOAT
         OrigamiProject(
-            title: "The Classic Sailboat",
+            title: "Pro Sailboat",
+            difficulty: "Beginner",
             iconName: "sailboat.fill",
+            accentColor: .blue,
             steps: [
-                // STEP 1: Diamond Fold (Triangle)
-                // Starts as a diamond, folds bottom half up to create a triangle
                 OrigamiStep(
-                    instruction: "Fold the bottom half of the diamond up to meet the top point.",
+                    instruction: "Fold the bottom half of the diamond up to the top point.",
                     paperPoints: [CGPoint(x: 0.5, y: 0), CGPoint(x: 1, y: 0.5), CGPoint(x: 0.5, y: 1), CGPoint(x: 0, y: 0.5)],
+                    completedFlaps: [],
                     flapPoints: [CGPoint(x: 0, y: 0.5), CGPoint(x: 0.5, y: 1), CGPoint(x: 1, y: 0.5)],
                     creasePoints: [CGPoint(x: 0, y: 0.5), CGPoint(x: 1, y: 0.5)],
-                    anchor: .center,
-                    rotationAxis: (x: 1, y: 0, z: 0),
-                    targetAngle: 180.0
+                    anchor: .center, rotationAxis: (1, 0, 0), targetAngle: 180.0
                 ),
-                
-                // STEP 2: The Vertical Sail Fold
-                // Creates the sharp white sail by folding the left corner toward the center
                 OrigamiStep(
-                    instruction: "Fold the left corner inward to reveal the white sail.",
+                    instruction: "Fold the left corner inward to reveal the white sail side.",
                     paperPoints: [CGPoint(x: 0, y: 0.5), CGPoint(x: 1, y: 0.5), CGPoint(x: 0.5, y: 0)],
+                    completedFlaps: [],
                     flapPoints: [CGPoint(x: 0, y: 0.5), CGPoint(x: 0.25, y: 0.25), CGPoint(x: 0.5, y: 0.5)],
                     creasePoints: [CGPoint(x: 0.25, y: 0.25), CGPoint(x: 0.5, y: 0.5)],
-                    anchor: .custom(UnitPoint(x: 0.5, y: 0.5)),
-                    rotationAxis: (x: 1, y: 1, z: 0),
-                    targetAngle: -180.0
+                    anchor: .custom(UnitPoint(x: 0.5, y: 0.5)), rotationAxis: (1, 1, 0), targetAngle: -180.0
                 ),
-                
-                // STEP 3: The Hull Fold
-                // Folds the bottom edge up horizontally to create the blue boat base
                 OrigamiStep(
-                    instruction: "Fold the bottom corner up to finish the hull.",
-                    paperPoints: [CGPoint(x: 0, y: 0.5), CGPoint(x: 1, y: 0.5), CGPoint(x: 0.5, y: 0), CGPoint(x: 0.25, y: 0.25)],
+                    instruction: "Fold the bottom corner up to finish the blue hull.",
+                    paperPoints: [CGPoint(x: 0.25, y: 0.25), CGPoint(x: 0.5, y: 0), CGPoint(x: 1, y: 0.5), CGPoint(x: 0.5, y: 0.5)],
+                    completedFlaps: [],
                     flapPoints: [CGPoint(x: 0.5, y: 0.5), CGPoint(x: 1, y: 0.5), CGPoint(x: 0.75, y: 0.25)],
                     creasePoints: [CGPoint(x: 0.5, y: 0.5), CGPoint(x: 0.75, y: 0.25)],
-                    anchor: .custom(UnitPoint(x: 0.75, y: 0.25)),
-                    rotationAxis: (x: -1, y: 1, z: 0),
-                    targetAngle: 180.0
+                    anchor: .custom(UnitPoint(x: 0.75, y: 0.25)), rotationAxis: (-1, 1, 0), targetAngle: 180.0
+                )
+            ]
+        ),
+        
+        // 2. THE ELITE PRO AIRPLANE (FLAWLESS 4-STEP)
+        OrigamiProject(
+            title: "Elite Pro Airplane",
+            difficulty: "Intermediate",
+            iconName: "paperplane.fill",
+            accentColor: .orange,
+            steps: [
+                // STEP 1: Left Corner
+                OrigamiStep(
+                    instruction: "Fold the top-left corner into the center.",
+                    paperPoints: [CGPoint(x: 0.5, y: 0), CGPoint(x: 1, y: 0), CGPoint(x: 1, y: 1), CGPoint(x: 0, y: 1), CGPoint(x: 0, y: 0.5)],
+                    completedFlaps: [],
+                    flapPoints: [CGPoint(x: 0, y: 0), CGPoint(x: 0.5, y: 0), CGPoint(x: 0, y: 0.5)],
+                    creasePoints: [CGPoint(x: 0.5, y: 0), CGPoint(x: 0, y: 0.5)],
+                    anchor: .custom(UnitPoint(x: 0.25, y: 0.25)), rotationAxis: (1, -1, 0), targetAngle: 180.0
+                ),
+                // STEP 2: Right Corner
+                OrigamiStep(
+                    instruction: "Fold the top-right corner into the center.",
+                    paperPoints: [CGPoint(x: 0.5, y: 0), CGPoint(x: 1, y: 0.5), CGPoint(x: 1, y: 1), CGPoint(x: 0, y: 1), CGPoint(x: 0, y: 0.5)],
+                    completedFlaps: [[CGPoint(x: 0.5, y: 0), CGPoint(x: 0.5, y: 0.5), CGPoint(x: 0, y: 0.5)]],
+                    flapPoints: [CGPoint(x: 0.5, y: 0), CGPoint(x: 1, y: 0), CGPoint(x: 1, y: 0.5)],
+                    creasePoints: [CGPoint(x: 0.5, y: 0), CGPoint(x: 1, y: 0.5)],
+                    anchor: .custom(UnitPoint(x: 0.75, y: 0.25)), rotationAxis: (1, 1, 0), targetAngle: 180.0
+                ),
+                // STEP 3: Nose Down
+                OrigamiStep(
+                    instruction: "Fold the entire top triangle straight down.",
+                    paperPoints: [CGPoint(x: 0, y: 0.5), CGPoint(x: 1, y: 0.5), CGPoint(x: 1, y: 1), CGPoint(x: 0, y: 1)],
+                    completedFlaps: [],
+                    flapPoints: [CGPoint(x: 0.5, y: 0), CGPoint(x: 1, y: 0.5), CGPoint(x: 0, y: 0.5)],
+                    creasePoints: [CGPoint(x: 0, y: 0.5), CGPoint(x: 1, y: 0.5)],
+                    anchor: .custom(UnitPoint(x: 0.5, y: 0.5)), rotationAxis: (1, 0, 0), targetAngle: 180.0
+                ),
+                // STEP 4: Fold in Half
+                OrigamiStep(
+                    instruction: "Fold the left half over the right half to finish!",
+                    paperPoints: [CGPoint(x: 0.5, y: 0.5), CGPoint(x: 1, y: 0.5), CGPoint(x: 1, y: 1), CGPoint(x: 0.5, y: 1)],
+                    completedFlaps: [[CGPoint(x: 0.5, y: 0.5), CGPoint(x: 1, y: 0.5), CGPoint(x: 0.5, y: 1)]],
+                    flapPoints: [CGPoint(x: 0, y: 0.5), CGPoint(x: 0.5, y: 0.5), CGPoint(x: 0.5, y: 1), CGPoint(x: 0, y: 1)],
+                    creasePoints: [CGPoint(x: 0.5, y: 0.5), CGPoint(x: 0.5, y: 1)],
+                    anchor: .custom(UnitPoint(x: 0.5, y: 0.75)), rotationAxis: (0, 1, 0), targetAngle: 180.0
+                )
+            ]
+        ),
+        
+        // 3. THE EXPERT BUTTERFLY
+        OrigamiProject(
+            title: "Expert Butterfly",
+            difficulty: "Expert",
+            iconName: "viewfinder.circle.fill",
+            accentColor: .purple,
+            steps: [
+                OrigamiStep(
+                    instruction: "Fold the top half down to the bottom edge.",
+                    paperPoints: [CGPoint(x: 0, y: 0), CGPoint(x: 1, y: 0), CGPoint(x: 1, y: 1), CGPoint(x: 0, y: 1)],
+                    completedFlaps: [],
+                    flapPoints: [CGPoint(x: 0, y: 0), CGPoint(x: 1, y: 0), CGPoint(x: 1, y: 0.5), CGPoint(x: 0, y: 0.5)],
+                    creasePoints: [CGPoint(x: 0, y: 0.5), CGPoint(x: 1, y: 0.5)],
+                    anchor: .center, rotationAxis: (1, 0, 0), targetAngle: 180.0
+                ),
+                OrigamiStep(
+                    instruction: "Fold the left side over to meet the right edge.",
+                    paperPoints: [CGPoint(x: 0, y: 0.5), CGPoint(x: 1, y: 0.5), CGPoint(x: 1, y: 1), CGPoint(x: 0, y: 1)],
+                    completedFlaps: [],
+                    flapPoints: [CGPoint(x: 0, y: 0.5), CGPoint(x: 0.5, y: 0.5), CGPoint(x: 0.5, y: 1), CGPoint(x: 0, y: 1)],
+                    creasePoints: [CGPoint(x: 0.5, y: 0.5), CGPoint(x: 0.5, y: 1)],
+                    anchor: .trailing, rotationAxis: (0, 1, 0), targetAngle: 180.0
+                ),
+                OrigamiStep(
+                    instruction: "Fold the top layer corner diagonally to form the first wing.",
+                    paperPoints: [CGPoint(x: 0.5, y: 0.5), CGPoint(x: 1, y: 0.5), CGPoint(x: 1, y: 1), CGPoint(x: 0.5, y: 1)],
+                    completedFlaps: [],
+                    flapPoints: [CGPoint(x: 0.5, y: 0.5), CGPoint(x: 1, y: 0.5), CGPoint(x: 0.5, y: 1)],
+                    creasePoints: [CGPoint(x: 0.5, y: 1), CGPoint(x: 1, y: 0.5)],
+                    anchor: .custom(UnitPoint(x: 0.75, y: 0.75)), rotationAxis: (1, 1, 0), targetAngle: 180.0
                 )
             ]
         )
