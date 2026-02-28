@@ -4,68 +4,66 @@ struct HomeGalleryView: View {
     @State private var engine = OrigamiEngine()
     @Environment(\.colorScheme) var colorScheme
     
-    let columns = [
-        GridItem(.adaptive(minimum: 280, maximum: 400), spacing: 35)
-    ]
+    // Group projects by difficulty
+    var easyProjects: [OrigamiProject] { OrigamiEngine.mockProjects.filter { $0.difficulty == "Beginner" } }
+    var intermediateProjects: [OrigamiProject] { OrigamiEngine.mockProjects.filter { $0.difficulty == "Intermediate" } }
+    var hardProjects: [OrigamiProject] { OrigamiEngine.mockProjects.filter { $0.difficulty == "Expert" } }
     
     var body: some View {
         NavigationStack {
             ZStack {
-                // 1. ADAPTIVE DAY/NIGHT BACKGROUND
-                LinearGradient(
-                    colors: colorScheme == .dark
-                        ? [Color(white: 0.1), Color.black]
-                        : [Color(red: 0.8, green: 0.95, blue: 1.0), Color.white],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ).ignoresSafeArea()
+                // AMBIENT BACKGROUND
+                (colorScheme == .dark ? Color(red: 0.05, green: 0.05, blue: 0.08) : Color(red: 0.95, green: 0.97, blue: 1.0))
+                    .ignoresSafeArea()
                 
-                // Adaptive floating clouds/glows
                 GeometryReader { geo in
                     Circle()
-                        .fill(colorScheme == .dark ? Color.purple.opacity(0.15) : Color.white.opacity(0.8))
-                        .frame(width: 250, height: 250)
-                        .offset(x: -80, y: -60)
+                        .fill(Color.purple.opacity(colorScheme == .dark ? 0.3 : 0.15))
+                        .frame(width: 400, height: 400)
+                        .blur(radius: 120)
+                        .offset(x: -100, y: -100)
                     
                     Circle()
-                        .fill(colorScheme == .dark ? Color.blue.opacity(0.15) : Color.white.opacity(0.6))
-                        .frame(width: 400, height: 400)
-                        .offset(x: geo.size.width - 200, y: geo.size.height * 0.4)
+                        .fill(Color.blue.opacity(colorScheme == .dark ? 0.3 : 0.15))
+                        .frame(width: 500, height: 500)
+                        .blur(radius: 150)
+                        .offset(x: geo.size.width - 250, y: geo.size.height * 0.4)
                 }
                 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .center, spacing: 40) {
+                    VStack(alignment: .leading, spacing: 35) {
                         
-                        // 2. ADAPTIVE TYPOGRAPHY & MASCOT HEADER
+                        // CENTERED HEADER
                         VStack(spacing: 12) {
-                            
-                            // ✨ YOUR NEW FLOATING MASCOT ✨
                             OrigamiBirdMascot()
-                                .padding(.bottom, 10)
                             
-                            Text("Origami Fun!")
-                                .font(.system(size: 54, weight: .heavy, design: .rounded))
-                                .foregroundColor(colorScheme == .dark ? .white : Color(red: 0.2, green: 0.4, blue: 0.9))
-                                .shadow(color: colorScheme == .dark ? .purple.opacity(0.3) : .blue.opacity(0.2), radius: 5, y: 5)
+                            Text("Origame")
+                                .font(.system(size: 42, weight: .heavy, design: .rounded))
+                                .foregroundColor(.primary)
                             
-                            Text("Pick a paper adventure ✨")
-                                .font(.system(size: 24, weight: .bold, design: .rounded))
-                                .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color(red: 0.4, green: 0.6, blue: 1.0))
+                            Text("Pick a paper adventure")
+                                .font(.system(size: 17, weight: .bold, design: .rounded))
+                                .foregroundColor(.secondary)
                         }
-                        .padding(.top, 40)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 50)
                         
-                        // 3. ADAPTIVE CARDS GRID
-                        LazyVGrid(columns: columns, spacing: 35) {
-                            ForEach(OrigamiEngine.mockProjects) { project in
-                                NavigationLink(value: project) {
-                                    KidProjectCard(project: project)
-                                }
-                                .buttonStyle(BouncyKidCardStyle())
-                            }
+                        // EASY SECTION
+                        if !easyProjects.isEmpty {
+                            DifficultySection(title: "Easy", iconName: "leaf.fill", color: .green, projects: easyProjects)
                         }
-                        .padding(.horizontal, 25)
+                        
+                        // INTERMEDIATE SECTION
+                        if !intermediateProjects.isEmpty {
+                            DifficultySection(title: "Intermediate", iconName: "star.fill", color: .orange, projects: intermediateProjects)
+                        }
+                        
+                        // HARD SECTION
+                        if !hardProjects.isEmpty {
+                            DifficultySection(title: "Hard", iconName: "flame.fill", color: .red, projects: hardProjects)
+                        }
                     }
-                    .padding(.bottom, 50)
+                    .padding(.bottom, 60)
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -77,72 +75,76 @@ struct HomeGalleryView: View {
     }
 }
 
-// MARK: - ✨ THE ORIGAMI BIRD MASCOT ✨
-struct OrigamiBirdMascot: View {
-    @State private var isFloating = false
-    @Environment(\.colorScheme) var colorScheme
+// MARK: - DIFFICULTY SECTION
+struct DifficultySection: View {
+    let title: String
+    let iconName: String
+    let color: Color
+    let projects: [OrigamiProject]
     
     var body: some View {
-        ZStack {
-            // Back Wing (Dark Blue)
-            PaperShape(points: [CGPoint(x: 0.4, y: 0.5), CGPoint(x: 0.1, y: 0.1), CGPoint(x: 0.6, y: 0.3)])
-                .fill(Color(red: 0.2, green: 0.4, blue: 0.9))
-            
-            // Tail (Light Blue)
-            PaperShape(points: [CGPoint(x: 0.1, y: 0.8), CGPoint(x: 0.4, y: 0.5), CGPoint(x: 0.3, y: 0.9)])
-                .fill(Color(red: 0.4, green: 0.7, blue: 1.0))
-            
-            // Body (Cyan)
-            PaperShape(points: [CGPoint(x: 0.4, y: 0.5), CGPoint(x: 0.8, y: 0.6), CGPoint(x: 0.1, y: 0.8)])
-                .fill(Color.cyan)
-            
-            // Front Wing (Adapts to Dark/Light Mode)
-            PaperShape(points: [CGPoint(x: 0.4, y: 0.5), CGPoint(x: 0.3, y: 0.0), CGPoint(x: 0.7, y: 0.4)])
-                .fill(colorScheme == .dark ? Color.white.opacity(0.8) : Color.white)
-                .shadow(color: .black.opacity(0.15), radius: 4, x: 2, y: 2)
-            
-            // Neck
-            PaperShape(points: [CGPoint(x: 0.8, y: 0.6), CGPoint(x: 0.9, y: 0.2), CGPoint(x: 0.7, y: 0.5)])
-                .fill(Color(red: 0.2, green: 0.4, blue: 0.9))
+        VStack(alignment: .leading, spacing: 16) {
+            // Section Header
+            HStack(spacing: 8) {
+                Image(systemName: iconName)
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(color)
                 
-            // Beak (Orange)
-            PaperShape(points: [CGPoint(x: 0.9, y: 0.2), CGPoint(x: 1.0, y: 0.15), CGPoint(x: 0.85, y: 0.25)])
-                .fill(Color.orange)
-        }
-        .frame(width: 140, height: 140)
-        // Bouncy shadow
-        .shadow(color: colorScheme == .dark ? .purple.opacity(0.4) : .blue.opacity(0.3), radius: isFloating ? 20 : 10, y: isFloating ? 25 : 10)
-        .offset(y: isFloating ? -15 : 5)
-        .onAppear {
-            withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true)) {
-                isFloating = true
+                Text(title)
+                    .font(.system(size: 26, weight: .heavy, design: .rounded))
+                    .foregroundColor(.primary)
+                
+                Capsule()
+                    .fill(color.opacity(0.2))
+                    .frame(width: 32, height: 22)
+                    .overlay(
+                        Text("\(projects.count)")
+                            .font(.system(size: 13, weight: .heavy, design: .rounded))
+                            .foregroundColor(color)
+                    )
+            }
+            .padding(.horizontal, 30)
+            
+            // Horizontal scrollable row of cards
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 18) {
+                    ForEach(projects) { project in
+                        NavigationLink(value: project) {
+                            KidProjectCard(project: project)
+                                .frame(width: 260)
+                        }
+                        .buttonStyle(BouncyKidCardStyle())
+                    }
+                }
+                .padding(.horizontal, 30)
             }
         }
     }
 }
 
-// MARK: - ADAPTIVE CHUNKY CARD
+// MARK: - ✨ PREMIUM FROSTED GLASS CARD ✨
 struct KidProjectCard: View {
     let project: OrigamiProject
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 16) {
+            // Icon Container
             ZStack {
-                Circle()
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
                     .fill(project.accentColor.opacity(0.15))
-                    .frame(height: 160)
+                    .frame(width: 90, height: 90)
                 
                 Image(systemName: project.iconName)
-                    .font(.system(size: 80, weight: .bold))
+                    .font(.system(size: 40, weight: .semibold))
                     .foregroundStyle(project.accentColor)
-                    .rotationEffect(.degrees(-8))
                     .shadow(color: project.accentColor.opacity(0.4), radius: 10, y: 5)
             }
-            .padding(.top, 35)
+            .padding(.top, 24)
             
             VStack(spacing: 12) {
                 Text(project.title)
-                    .font(.system(size: 28, weight: .heavy, design: .rounded))
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
                     .foregroundColor(.primary)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
@@ -151,21 +153,35 @@ struct KidProjectCard: View {
                 
                 KidDifficultyBadge(difficulty: project.difficulty, color: project.accentColor)
             }
-            .padding(.horizontal, 10)
-            .padding(.bottom, 35)
+            .padding(.horizontal, 15)
+            .padding(.bottom, 30)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 340)
-        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .frame(height: 250)
+        
+        // ✨ THE GLASSMORPHISM MAGIC ✨
+        // Uses ultraThinMaterial to blur the glowing background behind it
+        .background(.ultraThinMaterial)
+        .background(project.accentColor.opacity(0.05)) // Subtle tint
         .clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous))
-        .shadow(color: project.accentColor.opacity(0.2), radius: 20, y: 15)
+        .shadow(color: .black.opacity(colorScheme == .dark ? 0.3 : 0.1), radius: 25, y: 15) // Soft, deep shadow
+        
+        // Elegant 1px translucent border instead of the thick neon stroke
         .overlay(
             RoundedRectangle(cornerRadius: 40, style: .continuous)
-                .stroke(project.accentColor.opacity(0.6), lineWidth: 5)
+                .stroke(
+                    LinearGradient(
+                        colors: [.white.opacity(colorScheme == .dark ? 0.2 : 0.6), .white.opacity(0.0)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.5
+                )
         )
     }
 }
 
+// MARK: - REFINED BADGE
 struct KidDifficultyBadge: View {
     let difficulty: String
     let color: Color
@@ -180,30 +196,67 @@ struct KidDifficultyBadge: View {
     }
     
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 4) {
             ForEach(0..<3, id: \.self) { index in
                 Image(systemName: "star.fill")
-                    .font(.system(size: 18, weight: .black))
-                    .foregroundColor(index < stars ? color : Color.gray.opacity(0.2))
+                    .font(.system(size: 14, weight: .black))
+                    .foregroundColor(index < stars ? color : color.opacity(0.2))
             }
             
             Text(difficulty.uppercased())
-                .font(.system(size: 14, weight: .heavy, design: .rounded))
+                .font(.system(size: 12, weight: .heavy, design: .rounded))
                 .foregroundColor(color)
-                .padding(.leading, 6)
+                .padding(.leading, 4)
         }
-        .padding(.horizontal, 18)
+        .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(color.opacity(0.15))
+        .background(color.opacity(0.12))
         .clipShape(Capsule())
     }
 }
 
+// MARK: - SMOOTHER ANIMATION
 struct BouncyKidCardStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.90 : 1.0)
-            .rotationEffect(.degrees(configuration.isPressed ? -2 : 0))
-            .animation(.interpolatingSpring(stiffness: 250, damping: 15), value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed ? 0.92 : 1.0)
+            .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.6), value: configuration.isPressed)
+    }
+}
+
+// MARK: - THE ORIGAMI BIRD MASCOT
+struct OrigamiBirdMascot: View {
+    @State private var isFloating = false
+    @Environment(\.colorScheme) var colorScheme
+    
+    var body: some View {
+        ZStack {
+            PaperShape(points: [CGPoint(x: 0.4, y: 0.5), CGPoint(x: 0.1, y: 0.1), CGPoint(x: 0.6, y: 0.3)])
+                .fill(Color(red: 0.2, green: 0.4, blue: 0.9))
+            
+            PaperShape(points: [CGPoint(x: 0.1, y: 0.8), CGPoint(x: 0.4, y: 0.5), CGPoint(x: 0.3, y: 0.9)])
+                .fill(Color(red: 0.4, green: 0.7, blue: 1.0))
+            
+            PaperShape(points: [CGPoint(x: 0.4, y: 0.5), CGPoint(x: 0.8, y: 0.6), CGPoint(x: 0.1, y: 0.8)])
+                .fill(Color.cyan)
+            
+            PaperShape(points: [CGPoint(x: 0.4, y: 0.5), CGPoint(x: 0.3, y: 0.0), CGPoint(x: 0.7, y: 0.4)])
+                .fill(colorScheme == .dark ? Color.white.opacity(0.85) : Color.white)
+                .shadow(color: .black.opacity(0.15), radius: 4, x: 2, y: 2)
+            
+            PaperShape(points: [CGPoint(x: 0.8, y: 0.6), CGPoint(x: 0.9, y: 0.2), CGPoint(x: 0.7, y: 0.5)])
+                .fill(Color(red: 0.2, green: 0.4, blue: 0.9))
+                
+            PaperShape(points: [CGPoint(x: 0.9, y: 0.2), CGPoint(x: 1.0, y: 0.15), CGPoint(x: 0.85, y: 0.25)])
+                .fill(Color.orange)
+        }
+        .frame(width: 130, height: 130) // Slightly smaller
+        .shadow(color: colorScheme == .dark ? .purple.opacity(0.4) : .blue.opacity(0.3), radius: isFloating ? 20 : 10, y: isFloating ? 25 : 10)
+        .offset(y: isFloating ? -15 : 5)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true)) {
+                isFloating = true
+            }
+        }
     }
 }
